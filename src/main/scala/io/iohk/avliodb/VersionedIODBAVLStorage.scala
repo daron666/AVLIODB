@@ -56,12 +56,16 @@ class VersionedIODBAVLStorage(store: Store,
           val key = bytes.slice(2, 2 + keySize)
           val left = recover(bytes.slice(2 + keySize, 2 + keySize + labelSize))
           val right = recover(bytes.slice(2 + keySize + labelSize, 2 + keySize + (2 * labelSize)))
-          ProverNode(key, left, right, balance)
+          val n = ProverNode(key, left, right, balance)
+          n.isNew = false
+          n
         case 1 =>
           val key = bytes.slice(1, 1 + keySize)
           val value = bytes.slice(1 + keySize, 1 + keySize + valueSize)
           val nextLeafKey = bytes.slice(1 + keySize + valueSize, 1 + (2 * keySize) + valueSize)
-          Leaf(key, value, nextLeafKey)
+          val l = Leaf(key, value, nextLeafKey)
+          l.isNew = false
+          l
       }
     }
     val r = recover(store.get(TopNodeKey).data)

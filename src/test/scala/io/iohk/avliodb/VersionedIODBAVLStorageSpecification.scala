@@ -31,31 +31,43 @@ class VersionedIODBAVLStorageSpecification extends PropSpec
   property("Persistence AVL batch prover") {
 
     val storage = new VersionedIODBAVLStorage(store, KL, VL, LL)
-    require(storage.isEmpty)
+//    require(storage.isEmpty)
     val prover = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
+//    val prover = new BatchAVLProver(None, KL, VL)
     var digest = prover.rootHash
 
-    //        forAll(kvGen) { case (aKey, aValue) =>
-    val aKey = Random.randomBytes(KL)
-    val aValue = Random.randomBytes(VL)
-    val m = Insert(aKey, aValue)
-    prover.performOneModification(m)
-    val pf = prover.generateProof
-    val verifier = new BatchAVLVerifier(digest, pf, LL, KL, VL)
-    verifier.verifyOneModification(m)
-    prover.rootHash should not equal digest
-    prover.rootHash shouldEqual verifier.digest.get
+    def oneMod(aKey: Array[Byte], aValue: Array[Byte]): Unit = {
+      //TODO ????
+      digest = prover.rootHash
+      prover.rootHash shouldEqual digest
+      val m = Insert(aKey, aValue)
+      prover.performOneModification(m)
+      val pf = prover.generateProof.toArray
+      val verifier = new BatchAVLVerifier(digest, pf, LL, KL, VL)
+      verifier.verifyOneModification(m)
+      prover.rootHash should not equal digest
+      prover.rootHash shouldEqual verifier.digest.get
 
-    prover.rollback(digest).get
-    prover.rootHash shouldEqual digest
-    prover.performOneModification(m)
-    prover.generateProof
-    digest = prover.rootHash
-    //    }
-    //
-    println("ver:" + Base58.encode(storage.version))
-    val prover2 = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
-    Base58.encode(prover2.rootHash) shouldBe Base58.encode(prover.rootHash)
+      prover.rollback(digest).get
+      prover.rootHash shouldEqual digest
+      prover.performOneModification(m)
+      prover.generateProof
+      digest = prover.rootHash
+    }
+
+        forAll(kvGen) { case (aKey, aValue) =>
+      //    val aKey = Random.randomBytes(KL)
+      //    val aValue = Random.randomBytes(VL)
+      oneMod(aKey, aValue)
+    }
+//          oneMod(Random.randomBytes(KL), Random.randomBytes(VL))
+//          oneMod(Random.randomBytes(KL), Random.randomBytes(VL))
+//          oneMod(Random.randomBytes(KL), Random.randomBytes(VL))
+//          oneMod(Random.randomBytes(KL), Random.randomBytes(VL))
+
+//    println("ver:" + Base58.encode(storage.version))
+//    val prover2 = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
+//    Base58.encode(prover2.rootHash) shouldBe Base58.encode(prover.rootHash)
   }
 
 
