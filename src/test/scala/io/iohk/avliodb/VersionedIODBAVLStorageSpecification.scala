@@ -23,8 +23,8 @@ class VersionedIODBAVLStorageSpecification extends PropSpec
 
   implicit val hf = new Blake2b256Unsafe
   val filename = "/tmp/avliodb"
-  new File(filename).listFiles().foreach(f => f.delete())
   new File(filename).mkdir()
+  new File(filename).listFiles().foreach(f => f.delete())
   val store = new LSMStore(new File(filename))
 
   property("Persistence AVL batch prover") {
@@ -34,7 +34,7 @@ class VersionedIODBAVLStorageSpecification extends PropSpec
     val prover = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
     var digest = prover.rootHash
 
-    //    forAll(kvGen) { case (aKey, aValue) =>
+//        forAll(kvGen) { case (aKey, aValue) =>
     val aKey = Random.randomBytes(KL)
     val aValue = Random.randomBytes(VL)
     val m = Insert(aKey, aValue)
@@ -52,8 +52,8 @@ class VersionedIODBAVLStorageSpecification extends PropSpec
     digest = prover.rootHash
     //    }
     //
-    //    val prover2 = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
-    //    prover2.rootHash shouldEqual prover.rootHash
+        val prover2 = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
+        prover2.rootHash shouldEqual prover.rootHash
   }
 
 

@@ -19,8 +19,10 @@ class VersionedIODBAVLStorage(store: Store,
 
 
   override def update(topNode: ProverNodes): Try[Unit] = Try {
-    println("Update: "  + Base58.encode(topNode.label))
-    val toInsert = serializedVisitedNodes(topNode)
+    println("Update: " + Base58.encode(topNode.label))
+    //TODO topNode is a special case?
+    val toInsert = (nodeKey(topNode), ByteArrayWrapper(toBytes(topNode))) +: serializedVisitedNodes(topNode)
+    require(toInsert.map(_._1).contains(nodeKey(topNode)))
     //TODO to remove?
     store.update(longVersion(topNode.label, true), Seq(), (TopNodeKey, nodeKey(topNode)) +: toInsert)
   }
@@ -29,21 +31,24 @@ class VersionedIODBAVLStorage(store: Store,
     println("Rollback: " + Base58.encode(version))
 
     store.rollback(longVersion(version, false))
-    val topNodeBytes = store.get(TopNodeKey).data
-    def recover(bytes: Array[Byte]): ProverNodes = bytes.head match {
-      case 0 =>
-        val balance = bytes.slice(1, 2).head
-        val key = bytes.slice(2, 2 + keySize)
-        val left = recover(bytes.slice(2 + keySize, 2 + keySize + labelSize))
-        val right = recover(bytes.slice(2 + keySize + labelSize, 2 + keySize + (2 * labelSize)))
-        ProverNode(key, left, right, balance)
-      case 1 =>
-        val key = bytes.slice(1, 1 + keySize)
-        val value = bytes.slice(1 + keySize, 1 + keySize + valueSize)
-        val nextLeafKey = bytes.slice(1 + keySize + valueSize, 1 + (2 * keySize) + valueSize)
-        Leaf(key, value, nextLeafKey)
+    def recover(key: Array[Byte]): ProverNodes = {
+      println("recover: " + Base58.encode(key) + " = " + Base58.encode(store.get(ByteArrayWrapper(key)).data))
+      val bytes = store.get(ByteArrayWrapper(key)).data
+      bytes.head match {
+        case 0 =>
+          val balance = bytes.slice(1, 2).head
+          val key = bytes.slice(2, 2 + keySize)
+          val left = recover(bytes.slice(2 + keySize, 2 + keySize + labelSize))
+          val right = recover(bytes.slice(2 + keySize + labelSize, 2 + keySize + (2 * labelSize)))
+          ProverNode(key, left, right, balance)
+        case 1 =>
+          val key = bytes.slice(1, 1 + keySize)
+          val value = bytes.slice(1 + keySize, 1 + keySize + valueSize)
+          val nextLeafKey = bytes.slice(1 + keySize + valueSize, 1 + (2 * keySize) + valueSize)
+          Leaf(key, value, nextLeafKey)
+      }
     }
-    recover(topNodeBytes)
+    recover(store.get(TopNodeKey).data)
   }
 
   override def version: Version = versionsReverse(store.lastVersion)
@@ -83,6 +88,7 @@ class VersionedIODBAVLStorage(store: Store,
     if (isNew) {
       lastVersion = lastVersion + 1
       versions.put(b, lastVersion)
+      versionsReverse.put(lastVersion, b)
       lastVersion
     } else {
       lastVersion = versions(b)
