@@ -26,15 +26,18 @@ class VersionedIODBAVLStorage(store: Store,
       Seq((TopNodeKey, nodeKey(topNode)),
         (versionsReverseKey(lastVersion), ByteArrayWrapper(topNode.label)),
         (versionsKey(topNode.label), ByteArrayWrapper(Longs.toByteArray(lastVersion))))
-    val toInsert = topNodePair +: serializedVisitedNodes(topNode)
-    require(toInsert.map(_._1).contains(nodeKey(topNode)))
+    val toInsert = serializedVisitedNodes(topNode)
+    val toUpdate = if (!toInsert.map(_._1).contains(nodeKey(topNode))) {
+      topNodePair +: (indexes ++ toInsert)
+    } else indexes ++ toInsert
 
     println("Update: " + Base58.encode(topNode.label) + " | " + lastVersion)
-    println(toInsert.map(_._1).map(d => Base58.encode(d.data)))
+    println(toUpdate.map(d => Base58.encode(d._1.data)))
 
 
     //TODO to remove?
-    store.update(longVersion(topNode.label), Seq(), indexes ++ toInsert)
+
+    store.update(longVersion(topNode.label), Seq(), toUpdate)
 
     version
   }

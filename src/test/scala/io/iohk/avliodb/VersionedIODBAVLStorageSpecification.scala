@@ -23,8 +23,8 @@ class VersionedIODBAVLStorageSpecification extends PropSpec
 
 
   implicit val hf = new Blake2b256Unsafe
-  val filename = "/tmp/avliodb"
-  new File(filename).mkdir()
+  val filename = "/tmp/iohk/avliodb"
+  new File(filename).mkdirs()
   new File(filename).listFiles().foreach(f => f.delete())
   val store = new LSMStore(new File(filename))
 
