@@ -7,6 +7,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.{GeneratorDrivenPropertyChecks, PropertyChecks}
 import org.scalatest.{Matchers, PropSpec}
 import scorex.crypto.authds.avltree.batch._
+import scorex.crypto.encode.Base58
 import scorex.crypto.hash.Blake2b256Unsafe
 import scorex.utils.Random
 
@@ -34,7 +35,7 @@ class VersionedIODBAVLStorageSpecification extends PropSpec
     val prover = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
     var digest = prover.rootHash
 
-//        forAll(kvGen) { case (aKey, aValue) =>
+    //        forAll(kvGen) { case (aKey, aValue) =>
     val aKey = Random.randomBytes(KL)
     val aValue = Random.randomBytes(VL)
     val m = Insert(aKey, aValue)
@@ -52,8 +53,9 @@ class VersionedIODBAVLStorageSpecification extends PropSpec
     digest = prover.rootHash
     //    }
     //
-        val prover2 = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
-        prover2.rootHash shouldEqual prover.rootHash
+    println("ver:" + Base58.encode(storage.version))
+    val prover2 = new PersistentBatchAVLProver(new BatchAVLProver(None, KL, VL), storage)
+    Base58.encode(prover2.rootHash) shouldBe Base58.encode(prover.rootHash)
   }
 
 
